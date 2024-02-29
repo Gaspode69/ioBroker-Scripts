@@ -1,7 +1,7 @@
 //-------------------------------------------------------------------------------------------------------------------
 // ioBroker JavaScript:
 // Berechne den bisherigen Tagesverbrauch aller Verbraucher im Haushalt.
-// Nachts um 0:00 Uhr werden die Tageswerte wieder auf 0 zurück gesetzt
+// Nachts um 0:00 Uhr werden die Tageswerte wieder auf 0 zurück gesetzt (kann deaktiviert werden, s.u.)
 // 
 // Die State Namen entsprechen den Modbus Definitionen von hier:
 // https://github.com/ioBroker/modbus-templates/blob/main/PV-Wechselrichter/Alpha-ESS/holding_register.txt
@@ -9,14 +9,14 @@
 // 23.02.2024  V1.0.0 (Gaspode) Erste Version
 // 25.02.2024  V1.0.1 (Gaspode) Ignoriere Tagessumme, wenn rückläufig
 // 26.02.2024  V1.0.2 (Gaspode) Kleine Korrektur für rückläufige Tagessumme bei Script-Neustart
-// 29.02.2024  V1.1.0 (Gaspode) Erlaube Unterdrückung der Rücksetzung um Mitternacht
+// 29.02.2024  V2.0.0 (Gaspode) Erlaube Unterdrückung der Rücksetzung um Mitternacht
 //                              Berechne zusätzlich den Direktverbrauch der erzeugten PV Energie
 //                              Diverse interne Anpassungen
 //                              ACHTUNG: Der State Name für den GEsamtverbrauch wurde umbenannt von 
 //                                       HoseLoad zu Consumption_House" 
 //-------------------------------------------------------------------------------------------------------------------
 
-// Setze auf false, wenn um Mitternacht nicht zurückgesetzt werden soll, sondern weitergezählt
+// Setze auf false, wenn um Mitternacht nicht zurückgesetzt werden soll, sondern weitergezählt werden soll
 const resetAtMidnight = true;
 
 // Root Ordner im ioBroker Objektbaum:

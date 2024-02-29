@@ -1,2 +1,2 @@
 # ioBroker-Scripts
-Script collection for ioBroker Javascript Adapter
+Gaspode's Script collection for ioBroker Javascript Adapter

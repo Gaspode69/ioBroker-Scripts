@@ -20,7 +20,7 @@
 //                                       HoseLoad zu Consumption_House" 
 // 24.09.2024  V2.1.0 (Gaspode) Zusätzliche Tageswerte und Gesamtwerte für Eigenverbrauch, Autarkiegrad und Einnahmen.
 //                              Danke an reini72 von Storion4you.de 
-//                              VORSICHT: Die Sate Namen haben sich alle geändert, da jetzt eine Unterteilung in
+//                              VORSICHT: Die State Namen haben sich alle geändert, da jetzt eine Unterteilung in
 //                                        Unterordner stattfindet!
 //-------------------------------------------------------------------------------------------------------------------
 

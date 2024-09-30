@@ -16,12 +16,14 @@
 // 29.02.2024  V2.0.0 (Gaspode) Erlaube Unterdrückung der Rücksetzung um Mitternacht
 //                              Berechne zusätzlich den Direktverbrauch der erzeugten PV Energie
 //                              Diverse interne Anpassungen
-//                              ACHTUNG: Der State Name für den GEsamtverbrauch wurde umbenannt von 
+//                              ACHTUNG: Der State Name für den Gesamtverbrauch wurde umbenannt von 
 //                                       HoseLoad zu Consumption_House" 
 // 24.09.2024  V2.1.0 (Gaspode) Zusätzliche Tageswerte und Gesamtwerte für Eigenverbrauch, Autarkiegrad und Einnahmen.
 //                              Danke an reini72 von Storion4you.de 
-//                              VORSICHT: Die State Namen haben sich alle geändert, da jetzt eine Unterteilung in
+//                              VORSICHT: Die Sate Namen haben sich alle geändert, da jetzt eine Unterteilung in
 //                                        Unterordner stattfindet!
+// 30.09.2024  V2.1.1 (Gaspode) Die Werte für Consumption_House und Consumption_DirectPV werden jetzt um Mitternacht wieder
+//                              korrekt zurück gesetzt.
 //-------------------------------------------------------------------------------------------------------------------
 
 
@@ -81,19 +83,19 @@ let incomeTotal          = 0;
 let selfSufficiencyTotal = 0;
 let selfConsumptionTotal = 0;
 
-function updateHouseConsumptionState()
+function updateHouseConsumptionState(force = false)
 {
     const houseConsumptionNew = gridConsumption + batteryDischarge + pvGeneration - batteryCharge - gridFeedIn;
-    if (houseConsumptionNew > houseConsumption) {
+    if (force || houseConsumptionNew > houseConsumption) {
         houseConsumption = houseConsumptionNew;
         setState (resultRootToday + houseConsumptionStateName, houseConsumption);
     }
 }
 
-function updateDirectPVConsumptionState()
+function updateDirectPVConsumptionState(force = false)
 {
     const directPVConsumptionNew = pvGeneration - batteryCharge - gridFeedIn;
-    if (directPVConsumptionNew > directPVConsumption) {
+    if (force || directPVConsumptionNew > directPVConsumption) {
         directPVConsumption = directPVConsumptionNew;
         setState (resultRootToday + directPVConsumptionStateName, directPVConsumption);
     }
@@ -152,6 +154,8 @@ async function copyMidnightStates()
 
 async function resetResultStates()
 {
+    await setResultState (resultRootToday, houseConsumptionStateName, 0);
+    await setResultState (resultRootToday, directPVConsumptionStateName, 0);
     await setResultState (resultRootToday, gridConsumptionStateName, 0);
     await setResultState (resultRootToday, batteryDischargeStateName, 0);
     await setResultState (resultRootToday, batteryChargeStateName, 0);
@@ -160,6 +164,7 @@ async function resetResultStates()
     await setResultState (resultRootToday, incomeTodayStateName, 0);
     await setResultState (resultRootToday, selfSufficiencyTodayStateName, 0);
     await setResultState (resultRootToday, selfConsumptionTodayStateName, 0);
+
     await setResultState (resultRootTotal, incomeTotalStateName, 0);
     await setResultState (resultRootTotal, selfSufficiencyTotalStateName, 0);
     await setResultState (resultRootTotal, selfConsumptionTotalStateName, 0);
@@ -192,8 +197,8 @@ async function initValues()
     pvGeneration     = getState (resultRootToday + pvGenerationStateName).val;
     gridFeedIn       = getState (resultRootToday + gridFeedInStateName).val;
 
-    houseConsumption    = getState (resultRootToday + houseConsumptionStateName).val;
-    directPVConsumption = getState (resultRootToday + directPVConsumptionStateName).val;
+    updateHouseConsumptionState(true);
+    updateDirectPVConsumptionState(true);
 
     incomeToday          = getState (resultRootToday + incomeTodayStateName).val;
     selfSufficiencyToday = getState (resultRootToday + selfSufficiencyTodayStateName).val;

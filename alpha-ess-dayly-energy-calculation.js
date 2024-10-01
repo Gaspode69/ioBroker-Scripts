@@ -24,6 +24,7 @@
 //                                        Unterordner stattfindet!
 // 30.09.2024  V2.1.1 (Gaspode) Die Werte für Consumption_House und Consumption_DirectPV werden jetzt um Mitternacht wieder
 //                              korrekt zurück gesetzt.
+// 01.10.2024  V2.1.2 (Gaspode) Prüfe beim Start, ob die benötigten Modbus States vorhanden sind
 //-------------------------------------------------------------------------------------------------------------------
 
 
@@ -152,6 +153,13 @@ async function copyMidnightStates()
     await copyMidnightState (gridFeedInStateName);
 }
 
+async function checkSourceState(srcRoot, stateName)
+{
+    if (!existsState(srcRoot+stateName)) {
+        console.error(`Achtung: State "${srcRoot+stateName}" ist nicht vorhanden, wird aber für dieses Script benötigt!`);
+    }
+}
+
 async function resetResultStates()
 {
     await setResultState (resultRootToday, houseConsumptionStateName, 0);
@@ -211,6 +219,12 @@ async function initValues()
 
 async function init()
 {
+    await checkSourceState (modbusRoot, gridConsumptionStateName);
+    await checkSourceState (modbusRoot, batteryDischargeStateName);
+    await checkSourceState (modbusRoot, batteryChargeStateName);
+    await checkSourceState (modbusRoot, pvGenerationStateName);
+    await checkSourceState (modbusRoot, gridFeedInStateName);
+
     await initState (resultRootToday, gridConsumptionStateName, true, 'kWh');
     await initState (resultRootToday, batteryDischargeStateName, true, 'kWh');
     await initState (resultRootToday, batteryChargeStateName, true, 'kWh');

@@ -1,4 +1,4 @@
-//-------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------
 // ioBroker JavaScript:
 // Berechne aktuelle Tagessummen von Alpha-ESS Systemen auf Basis von Modbuswerten in W.
 //
@@ -8,7 +8,8 @@
 // "Adresse nicht in ID aufnehmen" muss gesetzt sein.
 //
 // 23.02.2024  V1.0.0 (Gaspode) Erste Version
-//-------------------------------------------------------------------------------------------------------------------
+// 09.10.2024  V1.1.0 (Gaspode) Zähle Register modbus.0.holdingRegisters._Total_Active_power_(PVMeter) zur PV Leistung dazu
+//--------------------------------------------------------------------------------------------------------------------------
 
 let PV_values = [];
 let Grid_values = [];
@@ -40,6 +41,8 @@ async function init() {
         if (i === PvResult.length - 1) {
             sumPV();
         }
+    
+        PV_values['modbus.0.holdingRegisters._Total_Active_power_(PVMeter)'] = getState('modbus.0.holdingRegisters._Total_Active_power_(PVMeter)').val;
     });
 
     const GridResult=$('^modbus.0.holdingRegisters._Active_power_of_*_phase_(Grid_Meter)');
@@ -57,6 +60,14 @@ on({ id: /^modbus\.0\.holdingRegisters\._PV.*_power/, change: 'ne' },
         sumPV();
     }
 );
+
+on({ id: 'modbus.0.holdingRegisters._Total_Active_power_(PVMeter)', change: 'ne' },
+    function (obj) {
+        PV_values[obj.id] = obj.state.val;
+        sumPV();
+    }
+);
+
 
 on({ id: /^modbus\.0\.holdingRegisters\._Active_power_of_.*_phase_\(Grid_Meter\)/, change: 'ne' },
     function (obj) {

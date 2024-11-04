@@ -25,6 +25,7 @@
 // 30.09.2024  V2.1.1 (Gaspode) Die Werte für Consumption_House und Consumption_DirectPV werden jetzt um Mitternacht wieder
 //                              korrekt zurück gesetzt.
 // 01.10.2024  V2.1.2 (Gaspode) Prüfe beim Start, ob die benötigten Modbus States vorhanden sind
+// 04.11.2024  V2.1.3 (Gaspode) Setze ACK auf true beim Schreiben von States
 //-------------------------------------------------------------------------------------------------------------------
 
 
@@ -89,7 +90,7 @@ function updateHouseConsumptionState(force = false)
     const houseConsumptionNew = gridConsumption + batteryDischarge + pvGeneration - batteryCharge - gridFeedIn;
     if (force || houseConsumptionNew > houseConsumption) {
         houseConsumption = houseConsumptionNew;
-        setState (resultRootToday + houseConsumptionStateName, houseConsumption);
+        setState (resultRootToday + houseConsumptionStateName, houseConsumption, true);
     }
 }
 
@@ -98,35 +99,35 @@ function updateDirectPVConsumptionState(force = false)
     const directPVConsumptionNew = pvGeneration - batteryCharge - gridFeedIn;
     if (force || directPVConsumptionNew > directPVConsumption) {
         directPVConsumption = directPVConsumptionNew;
-        setState (resultRootToday + directPVConsumptionStateName, directPVConsumption);
+        setState (resultRootToday + directPVConsumptionStateName, directPVConsumption, true);
     }
 }
 
 function updateIncomeStates()
 {
     incomeToday = roundTo (((pvGeneration - gridFeedIn) * priceBuy) + (gridFeedIn * priceSell), 2);
-    setState (resultRootToday + incomeTodayStateName, incomeToday);
+    setState (resultRootToday + incomeTodayStateName, incomeToday, true);
 
     incomeTotal = roundTo ((((pvGeneration + pvGenerationMN) - (gridFeedIn + gridFeedInMN)) * priceBuy) + ((gridFeedIn + gridFeedInMN) * priceSell), 2);
-    setState (resultRootTotal + incomeTotalStateName, incomeTotal);
+    setState (resultRootTotal + incomeTotalStateName, incomeTotal, true);
 }
 
 function updateSelfSufficiencyStates()
 {
     selfSufficiencyToday = roundTo (((pvGeneration - gridFeedIn) * 100) / (gridConsumption + pvGeneration - gridFeedIn), 2);
-    setState (resultRootToday + selfSufficiencyTodayStateName, selfSufficiencyToday);
+    setState (resultRootToday + selfSufficiencyTodayStateName, selfSufficiencyToday, true);
 
     selfSufficiencyTotal = roundTo ((((pvGeneration + pvGenerationMN) - (gridFeedIn + gridFeedInMN)) * 100) / (gridConsumption + gridConsumptionMN + pvGeneration + pvGenerationMN - (gridFeedIn + gridFeedIn)), 2);
-    setState (resultRootTotal + selfSufficiencyTotalStateName, selfSufficiencyTotal);
+    setState (resultRootTotal + selfSufficiencyTotalStateName, selfSufficiencyTotal, true);
 }
 
 function updateSelfConsumptionStates()
 {
     selfConsumptionToday = roundTo (((pvGeneration - gridFeedIn) * 100) / pvGeneration, 2);
-    setState (resultRootToday + selfConsumptionTodayStateName, selfConsumptionToday);
+    setState (resultRootToday + selfConsumptionTodayStateName, selfConsumptionToday, true);
 
     selfConsumptionTotal = roundTo ((((pvGeneration + pvGenerationMN) - (gridFeedIn + gridFeedInMN)) * 100) / (pvGeneration + pvGenerationMN), 2);
-    setState (resultRootTotal + selfConsumptionTotalStateName, selfConsumptionTotal);
+    setState (resultRootTotal + selfConsumptionTotalStateName, selfConsumptionTotal, true);
 }
 
 function roundTo(num, precision) {
@@ -136,12 +137,12 @@ function roundTo(num, precision) {
 
 async function copyMidnightState (stateName)
 {
-    setState (midnightRoot + stateName, getState (modbusRoot + stateName).val);
+    setState (midnightRoot + stateName, getState (modbusRoot + stateName).val, true);
 }
 
 async function setResultState (resRoot, stateName, value)
 {
-    setState (resRoot + stateName, value);
+    setState (resRoot + stateName, value, true);
 }
 
 async function copyMidnightStates()
@@ -252,7 +253,7 @@ init();
 
 on({ id: modbusRoot + gridConsumptionStateName, change: 'ne' }, (obj) => {
     gridConsumption = obj.state.val - gridConsumptionMN;
-    setState(resultRootToday + gridConsumptionStateName, gridConsumption);
+    setState(resultRootToday + gridConsumptionStateName, gridConsumption, true);
     updateHouseConsumptionState();
     updateIncomeStates();
     updateSelfSufficiencyStates();
@@ -261,21 +262,21 @@ on({ id: modbusRoot + gridConsumptionStateName, change: 'ne' }, (obj) => {
 
 on({ id: modbusRoot + batteryDischargeStateName, change: 'ne' }, (obj) => {
     batteryDischarge = obj.state.val - batteryDischargeMN;
-    setState(resultRootToday + batteryDischargeStateName, batteryDischarge);
+    setState(resultRootToday + batteryDischargeStateName, batteryDischarge, true);
     updateHouseConsumptionState();
 });
 
 on({ id: modbusRoot + batteryChargeStateName, change: 'ne' }, (obj) => {
 
     batteryCharge = obj.state.val - batteryChargeMN;
-    setState(resultRootToday + batteryChargeStateName, batteryCharge);
+    setState(resultRootToday + batteryChargeStateName, batteryCharge, true);
     updateHouseConsumptionState();
     updateDirectPVConsumptionState();
 });
 
 on({ id: modbusRoot + pvGenerationStateName, change: 'ne' }, (obj) => {
     pvGeneration = obj.state.val - pvGenerationMN;
-    setState(resultRootToday + pvGenerationStateName, pvGeneration);
+    setState(resultRootToday + pvGenerationStateName, pvGeneration, true);
     updateHouseConsumptionState();
     updateDirectPVConsumptionState();
     updateIncomeStates();
@@ -285,7 +286,7 @@ on({ id: modbusRoot + pvGenerationStateName, change: 'ne' }, (obj) => {
 
 on({ id: modbusRoot + gridFeedInStateName, change: 'ne' }, (obj) => {
     gridFeedIn = obj.state.val - gridFeedInMN;
-    setState(resultRootToday + gridFeedInStateName, gridFeedIn);
+    setState(resultRootToday + gridFeedInStateName, gridFeedIn, true);
     updateHouseConsumptionState();
     updateDirectPVConsumptionState();
     updateIncomeStates();

@@ -26,6 +26,7 @@
 //                              korrekt zurück gesetzt.
 // 01.10.2024  V2.1.2 (Gaspode) Prüfe beim Start, ob die benötigten Modbus States vorhanden sind
 // 04.11.2024  V2.1.3 (Gaspode) Setze ACK auf true beim Schreiben von States
+// 11.11.2024  V2.1.4 (Gaspode) Korrektur der Berechnung von total.Self_sufficiency
 //-------------------------------------------------------------------------------------------------------------------
 
 
@@ -117,7 +118,7 @@ function updateSelfSufficiencyStates()
     selfSufficiencyToday = roundTo (((pvGeneration - gridFeedIn) * 100) / (gridConsumption + pvGeneration - gridFeedIn), 2);
     setState (resultRootToday + selfSufficiencyTodayStateName, selfSufficiencyToday, true);
 
-    selfSufficiencyTotal = roundTo ((((pvGeneration + pvGenerationMN) - (gridFeedIn + gridFeedInMN)) * 100) / (gridConsumption + gridConsumptionMN + pvGeneration + pvGenerationMN - (gridFeedIn + gridFeedIn)), 2);
+    selfSufficiencyTotal = roundTo ((((pvGeneration + pvGenerationMN) - (gridFeedIn + gridFeedInMN)) * 100) / (gridConsumption + gridConsumptionMN + pvGeneration + pvGenerationMN - (gridFeedIn + gridFeedInMN)), 2);
     setState (resultRootTotal + selfSufficiencyTotalStateName, selfSufficiencyTotal, true);
 }
 

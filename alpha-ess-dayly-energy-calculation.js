@@ -27,6 +27,7 @@
 // 01.10.2024  V2.1.2 (Gaspode) Prüfe beim Start, ob die benötigten Modbus States vorhanden sind
 // 04.11.2024  V2.1.3 (Gaspode) Setze ACK auf true beim Schreiben von States
 // 11.11.2024  V2.1.4 (Gaspode) Korrektur der Berechnung von total.Self_sufficiency
+// 24.03.2025  V3.0.0 (Gaspode) Berechne Energie pro String des aktuellen Tages per Integration
 //-------------------------------------------------------------------------------------------------------------------
 
 
@@ -51,16 +52,27 @@ const batteryDischargeStateName = '_Battery_discharge_energy';
 const batteryChargeStateName    = '_Battery_charge_energy';
 const pvGenerationStateName     = '_Total_PV_Energy';
 const gridFeedInStateName       = '_Total_energyfeed_to_grid_(Grid_Meter)';
+const pvStringsPowerStateNames  = ['_PV1_power',
+                                   '_PV2_power',
+                                   /* weitere State Namen hier ergänzen */];
+
 
 // Namen der Ergebnis States:
-const houseConsumptionStateName     = 'Consumption_House'; // Hausverbrauch heute [kWh]
+const houseConsumptionStateName     = 'Consumption_House';    // Hausverbrauch heute [kWh]
 const directPVConsumptionStateName  = 'Consumption_DirectPV'; // PV Direktverbrauch heute [kWh]
-const incomeTodayStateName          = 'Income'; // Einnahmen heute [€]
-const selfSufficiencyTodayStateName = 'Self_sufficiency'; // Autarkiegrad heute [%]
-const selfConsumptionTodayStateName = 'Self_consumption'; // Anteil_Eigenverbrauch heute [%]
-const incomeTotalStateName          = 'Income'; // Einnahmen gesamt [€]
-const selfSufficiencyTotalStateName = 'Self_sufficiency'; // Autarkiegrad gesamt [%]
-const selfConsumptionTotalStateName = 'Self_consumption'; // Anteil_Eigenverbrauch gesamt [%]
+const incomeTodayStateName          = 'Income';               // Einnahmen heute [€]
+const selfSufficiencyTodayStateName = 'Self_sufficiency';     // Autarkiegrad heute [%]
+const selfConsumptionTodayStateName = 'Self_consumption';     // Anteil_Eigenverbrauch heute [%]
+const incomeTotalStateName          = 'Income';               // Einnahmen gesamt [€]
+const selfSufficiencyTotalStateName = 'Self_sufficiency';     // Autarkiegrad gesamt [%]
+const selfConsumptionTotalStateName = 'Self_consumption';     // Anteil_Eigenverbrauch gesamt [%]
+
+
+
+
+// -------------------------------------------------------------------------------------------------------------------------
+// Ab hier sollte nichts verändert werden
+// -------------------------------------------------------------------------------------------------------------------------
 
 // Variablen für aktuelle Werte
 let gridConsumption  = 0;
@@ -68,6 +80,7 @@ let batteryDischarge = 0;
 let batteryCharge    = 0;
 let pvGeneration     = 0;
 let gridFeedIn       = 0;
+let pvStringsEnergy  = [];
 
 // Variablen für Mitternachtswerte
 let gridConsumptionMN    = 0;
@@ -85,6 +98,10 @@ let selfConsumptionToday = 0;
 let incomeTotal          = 0;
 let selfSufficiencyTotal = 0;
 let selfConsumptionTotal = 0;
+
+// Sonstiges
+let pvStringsPowerStateNamesFull = [];
+let lastStringsPowerStates = [];
 
 function updateHouseConsumptionState(force = false)
 {
@@ -136,6 +153,10 @@ function roundTo(num, precision) {
   return Math.round(num * factor) / factor
 }
 
+function getEnergyStateNameFor(stateName) {
+    return `${stateName}_Energy`;
+}
+
 async function copyMidnightState (stateName)
 {
     setState (midnightRoot + stateName, getState (modbusRoot + stateName).val, true);
@@ -174,6 +195,10 @@ async function resetResultStates()
     await setResultState (resultRootToday, incomeTodayStateName, 0);
     await setResultState (resultRootToday, selfSufficiencyTodayStateName, 0);
     await setResultState (resultRootToday, selfConsumptionTodayStateName, 0);
+
+    for (const stateName of pvStringsPowerStateNames) {
+        await setResultState (resultRootToday, getEnergyStateNameFor(stateName), 0);
+    }
 
     await setResultState (resultRootTotal, incomeTotalStateName, 0);
     await setResultState (resultRootTotal, selfSufficiencyTotalStateName, 0);
@@ -214,6 +239,11 @@ async function initValues()
     selfSufficiencyToday = getState (resultRootToday + selfSufficiencyTodayStateName).val;
     selfConsumptionToday = getState (resultRootToday + selfConsumptionTodayStateName).val;
 
+    pvStringsPowerStateNames.forEach((stateName) => {
+        pvStringsEnergy[stateName] = getState (resultRootToday + getEnergyStateNameFor(stateName)).val;
+        lastStringsPowerStates[stateName] = getState(modbusRoot + stateName);
+    });
+
     incomeTotal          = getState (resultRootTotal + incomeTotalStateName).val;
     selfSufficiencyTotal = getState (resultRootTotal + selfSufficiencyTotalStateName).val;
     selfConsumptionTotal = getState (resultRootTotal + selfConsumptionTotalStateName).val;
@@ -244,10 +274,24 @@ async function init()
     await initState (resultRootTotal, selfSufficiencyTotalStateName, false, '%');
     await initState (resultRootTotal, selfConsumptionTotalStateName, false, '%');
 
+    pvStringsPowerStateNamesFull = await Promise.all(pvStringsPowerStateNames.map(async (stateName) => {
+        await checkSourceState (modbusRoot, stateName);
+        await initState (resultRootToday, getEnergyStateNameFor(stateName), false, 'kWh');
+        return `${modbusRoot}${stateName}`;
+    }));
+
     await initValues();
 
     updateHouseConsumptionState();
     updateDirectPVConsumptionState();
+
+    on({ id: pvStringsPowerStateNamesFull, change: 'ne'}, (obj) => {
+        const stateName = obj.id.substring(obj.id.lastIndexOf('.') + 1);
+        const tDiff = (obj.state.ts - lastStringsPowerStates[stateName].ts) / 1000 / 3600;
+        pvStringsEnergy[stateName] += lastStringsPowerStates[stateName].val * tDiff / 1000;
+        setResultState (resultRootToday, getEnergyStateNameFor(stateName), Math.round(pvStringsEnergy[stateName]*1000)/1000);
+        lastStringsPowerStates[stateName] = obj.state;
+    });
 }
 
 init();

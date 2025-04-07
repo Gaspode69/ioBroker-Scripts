@@ -28,6 +28,7 @@
 // 04.11.2024  V2.1.3 (Gaspode) Setze ACK auf true beim Schreiben von States
 // 11.11.2024  V2.1.4 (Gaspode) Korrektur der Berechnung von total.Self_sufficiency
 // 24.03.2025  V3.0.0 (Gaspode) Berechne Energie pro String des aktuellen Tages per Integration
+// 27.03.2025  V3.0.0a (Gaspode) Test: Ignoriere es, wenn Energiewerte kleiner werden als der vorherige Wert
 //-------------------------------------------------------------------------------------------------------------------
 
 
@@ -297,46 +298,55 @@ async function init()
 init();
 
 on({ id: modbusRoot + gridConsumptionStateName, change: 'ne' }, (obj) => {
-    gridConsumption = obj.state.val - gridConsumptionMN;
-    setState(resultRootToday + gridConsumptionStateName, gridConsumption, true);
-    updateHouseConsumptionState();
-    updateIncomeStates();
-    updateSelfSufficiencyStates();
-    updateSelfConsumptionStates();
+    if (obj.state.val > obj.oldState.val) {
+        gridConsumption = obj.state.val - gridConsumptionMN;
+        setState(resultRootToday + gridConsumptionStateName, gridConsumption, true);
+        updateHouseConsumptionState();
+        updateIncomeStates();
+        updateSelfSufficiencyStates();
+        updateSelfConsumptionStates();
+    }
 });
 
 on({ id: modbusRoot + batteryDischargeStateName, change: 'ne' }, (obj) => {
-    batteryDischarge = obj.state.val - batteryDischargeMN;
-    setState(resultRootToday + batteryDischargeStateName, batteryDischarge, true);
-    updateHouseConsumptionState();
+    if (obj.state.val > obj.oldState.val) {
+        batteryDischarge = obj.state.val - batteryDischargeMN;
+        setState(resultRootToday + batteryDischargeStateName, batteryDischarge, true);
+        updateHouseConsumptionState();
+    }
 });
 
 on({ id: modbusRoot + batteryChargeStateName, change: 'ne' }, (obj) => {
-
-    batteryCharge = obj.state.val - batteryChargeMN;
-    setState(resultRootToday + batteryChargeStateName, batteryCharge, true);
-    updateHouseConsumptionState();
-    updateDirectPVConsumptionState();
+    if (obj.state.val > obj.oldState.val) {
+        batteryCharge = obj.state.val - batteryChargeMN;
+        setState(resultRootToday + batteryChargeStateName, batteryCharge, true);
+        updateHouseConsumptionState();
+        updateDirectPVConsumptionState();
+    }
 });
 
 on({ id: modbusRoot + pvGenerationStateName, change: 'ne' }, (obj) => {
-    pvGeneration = obj.state.val - pvGenerationMN;
-    setState(resultRootToday + pvGenerationStateName, pvGeneration, true);
-    updateHouseConsumptionState();
-    updateDirectPVConsumptionState();
-    updateIncomeStates();
-    updateSelfSufficiencyStates();
-    updateSelfConsumptionStates();
+    if (obj.state.val > obj.oldState.val) {
+        pvGeneration = obj.state.val - pvGenerationMN;
+        setState(resultRootToday + pvGenerationStateName, pvGeneration, true);
+        updateHouseConsumptionState();
+        updateDirectPVConsumptionState();
+        updateIncomeStates();
+        updateSelfSufficiencyStates();
+        updateSelfConsumptionStates();
+    }
 });
 
 on({ id: modbusRoot + gridFeedInStateName, change: 'ne' }, (obj) => {
-    gridFeedIn = obj.state.val - gridFeedInMN;
-    setState(resultRootToday + gridFeedInStateName, gridFeedIn, true);
-    updateHouseConsumptionState();
-    updateDirectPVConsumptionState();
-    updateIncomeStates();
-    updateSelfSufficiencyStates();
-    updateSelfConsumptionStates();
+    if (obj.state.val > obj.oldState.val) {
+        gridFeedIn = obj.state.val - gridFeedInMN;
+        setState(resultRootToday + gridFeedInStateName, gridFeedIn, true);
+        updateHouseConsumptionState();
+        updateDirectPVConsumptionState();
+        updateIncomeStates();
+        updateSelfSufficiencyStates();
+        updateSelfConsumptionStates();
+    }
 });
 
 // 5 Sekunden nach Mitternacht umspeichern der Modbus PV Energiewerte
